@@ -45,6 +45,7 @@ GROUP BY city, property_type;
 ```
 
 _Screenshot showing first 5 records only._
+
 <kbd><img width="617" alt="image" src="https://user-images.githubusercontent.com/81607668/139521181-c5aaba65-d83f-4ccd-8577-4ee8e11e627a.png"></kbd>
 
 
