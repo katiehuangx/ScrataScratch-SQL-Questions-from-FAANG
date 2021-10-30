@@ -2,6 +2,7 @@
 
 Solutions to ScrataScratch's FAANG SQL interview questions
 
+# EASY
 ## [Dropbox: Salaries Differences](https://platform.stratascratch.com/coding/10308-salaries-differences?python=)
 **Write a query that calculates the difference between the highest salaries found in the marketing and engineering departments. Output just the difference in salaries.**
 
@@ -19,6 +20,10 @@ WHERE d.department = 'marketing';
 ```
 
 <img width="175" alt="image" src="https://user-images.githubusercontent.com/81607668/139520220-8cbaef69-8dfa-4402-8dd6-0efad77e44e3.png">
+
+***
+
+# MEDIUM
 
 ## [Facebook: Highest Energy Consumption](https://platform.stratascratch.com/coding/10064-highest-energy-consumption?python=)
 **Find the date with the highest total energy consumption from the Facebook data centers. Output the date along with the total energy consumption across all data centers.**
@@ -47,3 +52,103 @@ LIMIT 2;
 
 ## [Amazon: Finding User Purchases](https://platform.stratascratch.com/coding/10322-finding-user-purchases?python=)
 **Write a query that'll identify returning active users. A returning active user is a user that has made a second purchase within 7 days of any other of their purchases. Output a list of user_ids of these returning active users.**
+
+```sql
+WITH next_purchase AS (
+SELECT 
+  id, user_id, created_at,
+  LEAD(created_at) OVER (PARTITION BY user_id ORDER BY created_at) AS next_date
+FROM amazon_transactions
+),
+GAP AS (
+SELECT 
+  user_id, created_at, next_date,
+  (next_date - created_at) AS purchase_gap
+FROM next_purchase
+)
+
+SELECT DISTINCT user_id
+FROM gap
+WHERE purchase_gap <= 7;
+```
+
+_Screenshot showing first 5 records only_
+
+<img width="271" alt="image" src="https://user-images.githubusercontent.com/81607668/139520528-7ab76478-6f3e-42e5-b633-b16af8fca4de.png">
+
+## [Twitter: Highest Salary In Department](https://platform.stratascratch.com/coding/9897-highest-salary-in-department?python=)
+**Find the employee with the highest salary per department. Output the department name, employee's first name along with the corresponding salary.**
+
+```sql
+WITH max_salary AS (
+SELECT 
+  department, 
+  MAX(salary) AS max_salary,
+  ROW_NUMBER() OVER (PARTITION BY department) AS rank
+FROM employee
+GROUP BY department
+)
+
+SELECT 
+  s.department, 
+  e.first_name AS employee_name, 
+  s.max_salary
+FROM employee e
+INNER JOIN max_salary s
+  ON e.salary = s.salary;
+```
+
+<img width="616" alt="image" src="https://user-images.githubusercontent.com/81607668/139520725-cba359cd-c654-47fa-a179-09667760efaf.png">
+
+***
+
+# HARD
+
+## [Amazon: Highest Cost Orders](https://platform.stratascratch.com/coding/9915-highest-cost-orders?python=)
+**Find the customer with the highest total order cost between 2019-02-01 to 2019-05-01. If customer had more than one order on a certain day, sum the order costs on daily basis. Output their first name, total cost of their items, and the date. For simplicity, you can assume that every first name in the dataset is unique.**
+
+```sql
+SELECT
+  first_name,
+  SUM(total_order_cost) OVER (
+    PARTITION BY first_name, order_date) AS total_costs,
+  order_date
+FROM customers AS c
+INNER JOIN orders AS o
+  ON c.id = o.cust_id
+GROUP BY first_name, total_order_cost, order_date
+HAVING order_date BETWEEN '2019-02-01' and '2019-05-01'
+ORDER BY total_costs DESC
+LIMIT 1;
+```
+
+<img width="617" alt="image" src="https://user-images.githubusercontent.com/81607668/139520598-af1404b5-5325-44e5-8c9e-3455f3383859.png">
+
+## [Top 5 States With 5 Star Businesses](https://platform.stratascratch.com/coding/10046-top-5-states-with-5-star-businesses?python=)
+**Find the top 5 states with the most 5 star businesses. Output the state name along with the number of 5-star businesses and order records by the number of 5-star businesses in descending order. In case there are ties in the number of businesses, return all the unique states. If two states have the same result, sort them in alphabetical order.**
+
+```sql
+WITH ranked_cte AS (
+SELECT
+  state,
+  COUNT(business_id) AS business_id_count,
+  DENSE_RANK() OVER (
+    PARTITION BY state 
+    ORDER BY COUNT(business_id) DESC) AS ranking
+FROM yelp_business
+WHERE stars = 5
+GROUP BY state
+)
+
+SELECT 
+  state, business_id_count
+FROM ranked_cte
+ORDER BY business_id_count DESC
+LIMIT 6;
+```
+
+<img width="447" alt="image" src="https://user-images.githubusercontent.com/81607668/139520678-06f62ed9-dc1f-4ebb-949b-623e94e33591.png">
+
+
+
+
